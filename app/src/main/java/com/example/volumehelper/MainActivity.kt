@@ -1,30 +1,43 @@
 package com.example.volumehelper
 
+import android.Manifest
 import android.app.Activity
-import android.media.AudioManager
+import android.content.Intent
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.Button
+import android.widget.Toast
 
 class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val am = getSystemService(AUDIO_SERVICE) as AudioManager
-
-        findViewById<Button>(R.id.btnUp).setOnClickListener {
-            am.adjustStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                AudioManager.ADJUST_RAISE,
-                AudioManager.FLAG_SHOW_UI
-            )
+        findViewById<Button>(R.id.btnStart).setOnClickListener {
+            if (!Settings.canDrawOverlays(this)) {
+                Toast.makeText(
+                    this,
+                    "Allow 'Display over other apps', then come back and press Start",
+                    Toast.LENGTH_LONG
+                ).show()
+                startActivity(
+                    Intent(
+                        Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                        Uri.parse("package:$packageName")
+                    )
+                )
+            } else {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+                }
+                startForegroundService(Intent(this, OverlayService::class.java))
+            }
         }
-        findViewById<Button>(R.id.btnDown).setOnClickListener {
-            am.adjustStreamVolume(
-                AudioManager.STREAM_MUSIC,
-                AudioManager.ADJUST_LOWER,
-                AudioManager.FLAG_SHOW_UI
-            )
+
+        findViewById<Button>(R.id.btnStop).setOnClickListener {
+            stopService(Intent(this, OverlayService::class.java))
         }
     }
 }
